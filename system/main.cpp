@@ -4,6 +4,7 @@
 #include "test.h"
 #include "thread.h"
 #include "manager.h"
+#include "diag.h"
 #include "mem_alloc.h"
 #include "query.h"
 #include "plock.h"
@@ -23,6 +24,8 @@ int main(int argc, char* argv[])
 	
 	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 
 	stats.init();
+	glob_diag = (Diag *) _mm_malloc(sizeof(Diag), 64);
+	glob_diag->init();
 	glob_manager = (Manager *) _mm_malloc(sizeof(Manager), 64);
 	glob_manager->init();
 	if (g_cc_alg == DL_DETECT) 
@@ -103,6 +106,14 @@ int main(int argc, char* argv[])
 	} else {
 		((TestWorkload *)m_wl)->summarize();
 	}
+	tpcc_wl * _wl = (tpcc_wl *)m_wl;
+	cout << "ORDER_LINE_KEYS STAT" << endl;
+	for(uint64_t i = 0 ; i <g_num_wh ;i++ ){
+		cout << "WH:" << i << " SIZE: " << glob_diag->get_order_line_set_size(i) << " GENERATED: " << glob_diag->order_lines_counter[i]<< endl;
+		cout << "FOUND: " << glob_diag->check_orderlineDb_size_per_wh(_wl->i_orderline,i) << endl;
+	}
+
+
 	return 0;
 }
 

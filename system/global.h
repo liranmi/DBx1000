@@ -39,6 +39,9 @@ class Query_queue;
 class Plock;
 class OptCC;
 class VLLMan;
+class Diag;
+class IndexBase;
+class IndexHash;
 
 typedef uint32_t UInt32;
 typedef int32_t SInt32;
@@ -54,6 +57,7 @@ extern mem_alloc mem_allocator;
 extern Stats stats;
 extern DL_detect dl_detector;
 extern Manager * glob_manager;
+extern Diag * glob_diag;
 extern Query_queue * query_queue;
 extern Plock part_lock_man;
 extern OptCC occ_man;

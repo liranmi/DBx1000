@@ -12,6 +12,7 @@
 #include "txn.h"
 #include "mem_alloc.h"
 #include "tpcc_const.h"
+#include "diag.h"
 
 RC tpcc_wl::init() {
 	workload::init();
@@ -38,6 +39,7 @@ RC tpcc_wl::init_schema(const char * schema_file) {
 	t_neworder = tables["NEW-ORDER"];
 	t_order = tables["ORDER"];
 	t_orderline = tables["ORDER-LINE"];
+	t_neworder  = tables["NEW-ORDER"];
 	t_item = tables["ITEM"];
 	t_stock = tables["STOCK"];
 
@@ -47,6 +49,10 @@ RC tpcc_wl::init_schema(const char * schema_file) {
 	i_customer_id = indexes["CUSTOMER_ID_IDX"];
 	i_customer_last = indexes["CUSTOMER_LAST_IDX"];
 	i_stock = indexes["STOCK_IDX"];
+
+	i_order = indexes["ORDER_IDX"];
+	i_orderline = indexes["ORDER_LINE_IDX"];
+	i_new_order = indexes["NEW_ORDER_IDX"];
 	return RCOK;
 }
 
@@ -86,7 +92,7 @@ RC tpcc_wl::get_txn_man(txn_man *& txn_manager, thread_t * h_thd) {
 
 // TODO ITEM table is assumed to be in partition 0
 void tpcc_wl::init_tab_item() {
-	for (UInt32 i = 1; i <= g_max_items; i++) {
+	for (UInt64 i = 1; i <= g_max_items; i++) {
 		row_t * row;
 		uint64_t row_id;
 		t_item->get_new_row(row, 0, row_id);
@@ -170,7 +176,7 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
     	double w_ytd=30000.00;
 		row->set_value(D_TAX, tax);
 		row->set_value(D_YTD, w_ytd);
-		row->set_value(D_NEXT_O_ID, 3001);
+		row->set_value(D_NEXT_O_ID,(int64_t)3001);
 		
 		index_insert(i_district, distKey(did, wid), row, wh_to_part(wid));
 	}
@@ -178,7 +184,7 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
 
 void tpcc_wl::init_tab_stock(uint64_t wid) {
 	
-	for (UInt32 sid = 1; sid <= g_max_items; sid++) {
+	for (UInt64 sid = 1; sid <= g_max_items; sid++) {
 		row_t * row;
 		uint64_t row_id;
 		t_stock->get_new_row(row, 0, row_id);
@@ -325,9 +331,11 @@ void tpcc_wl::init_tab_order(uint64_t did, uint64_t wid) {
 		row->set_value(O_OL_CNT, o_ol_cnt);
 		row->set_value(O_ALL_LOCAL, 1);
 		
+		index_insert(i_order, orderPrimaryKey(wid,did,oid), row, wh_to_part(wid));
+
 		// ORDER-LINE	
 #if !TPCC_SMALL
-		for (uint32_t ol = 1; ol <= o_ol_cnt; ol++) {
+		for (uint64_t ol = 1; ol <= o_ol_cnt; ol++) {
 			t_orderline->get_new_row(row, 0, row_id);
 			row->set_value(OL_O_ID, oid);
 			row->set_value(OL_D_ID, did);
@@ -337,15 +345,18 @@ void tpcc_wl::init_tab_order(uint64_t did, uint64_t wid) {
 			row->set_value(OL_SUPPLY_W_ID, wid);
 			if (oid < 2101) {
 				row->set_value(OL_DELIVERY_D, o_entry);
-				row->set_value(OL_AMOUNT, 0);
+				row->set_value(OL_AMOUNT, (uint64_t)0);
 			} else {
-				row->set_value(OL_DELIVERY_D, 0);
+				row->set_value(OL_DELIVERY_D, (uint64_t)0);
 				row->set_value(OL_AMOUNT, (double)URand(1, 999999, wid-1)/100);
 			}
 			row->set_value(OL_QUANTITY, 5);
 			char ol_dist_info[24];
 	        MakeAlphaString(24, 24, ol_dist_info, wid-1);
 			row->set_value(OL_DIST_INFO, ol_dist_info);
+			index_insert(i_orderline, orderlineKey(wid,did,oid), row, wh_to_part(wid));
+			glob_diag->insert_key_order_line(orderlineKey(wid,did,oid),wid - 1);
+			glob_diag->order_lines_counter[wid - 1]++;
 		}
 #endif
 		// NEW ORDER
@@ -354,6 +365,7 @@ void tpcc_wl::init_tab_order(uint64_t did, uint64_t wid) {
 			row->set_value(NO_O_ID, oid);
 			row->set_value(NO_D_ID, did);
 			row->set_value(NO_W_ID, wid);
+			index_insert(i_new_order, orderPrimaryKey(wid,did,oid), row, wh_to_part(wid));
 		}
 	}
 }

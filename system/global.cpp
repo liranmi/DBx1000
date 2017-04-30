@@ -7,11 +7,13 @@
 #include "plock.h"
 #include "occ.h"
 #include "vll.h"
+#include "diag.h"
 
 mem_alloc mem_allocator;
 Stats stats;
 DL_detect dl_detector;
 Manager * glob_manager;
+Diag * glob_diag;
 Query_queue * query_queue;
 Plock part_lock_man;
 OptCC occ_man;

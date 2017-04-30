@@ -2,7 +2,7 @@
 
 #include "helper.h"
 #include "global.h"
-
+#include "txn.h"
 class row_t;
 class txn_man;
 

@@ -8,6 +8,7 @@ class thread_t;
 class row_t;
 class table_t;
 class base_query;
+class itemid_t;
 class INDEX;
 
 // each thread has a txn_man. 
