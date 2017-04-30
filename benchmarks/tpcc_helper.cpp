@@ -1,5 +1,6 @@
 #include "tpcc_helper.h"
 
+#define PRIME_DIST 145477
 drand48_data ** tpcc_buffer;
 
 uint64_t distKey(uint64_t d_id, uint64_t d_w_id)  {
@@ -7,11 +8,11 @@ uint64_t distKey(uint64_t d_id, uint64_t d_w_id)  {
 }
 
 uint64_t custKey(uint64_t c_id, uint64_t c_d_id, uint64_t c_w_id) {
-	return (distKey(c_d_id, c_w_id) * g_cust_per_dist + c_id);
+	return (distKey(c_d_id, c_w_id) * PRIME_DIST + c_id);
 }
 
 uint64_t orderlineKey(uint64_t w_id, uint64_t d_id, uint64_t o_id) {
-	return distKey(d_id, w_id) * g_cust_per_dist + o_id; 
+	return distKey(d_id, w_id) * PRIME_DIST + o_id;
 }
 
 uint64_t orderPrimaryKey(uint64_t w_id, uint64_t d_id, uint64_t o_id) {

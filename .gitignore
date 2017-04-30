@@ -1,1 +1,7 @@
 *.o
+*.d
+.autotools
+.cproject
+.project
+.settings/
+rundb
