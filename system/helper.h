@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "global.h"
 
+class row_t;
 
 /************************************************/
 // atomic operations
@@ -137,7 +138,7 @@
 		*name[i] = value; \
 
 enum Data_type {DT_table, DT_page, DT_row };
-
+enum Order_type {O_order,O_new_order,O_order_lines,O_size};
 // TODO currently, only DR_row supported
 // data item type. 
 class itemid_t {
@@ -150,11 +151,31 @@ public:
 	Data_type type;
 	void * location; // points to the table | page | row
 	itemid_t * next;
+#if EN_INSERTS
+	INDEX * index;
+	idx_key_t key;
+	int part_id;
+#endif
 	bool valid;
 	void init();
 	bool operator==(const itemid_t &other) const;
 	bool operator!=(const itemid_t &other) const;
 	void operator=(const itemid_t &other);
+};
+
+
+class row_item_t {
+public:
+	row_item_t() { };
+	INDEX * index;
+	idx_key_t key;
+	itemid_t * item;
+	int part_id;
+	Order_type o_type;
+	void init();
+	bool operator==(const row_item_t &other) const;
+	bool operator!=(const row_item_t &other) const;
+	void operator=(const row_item_t &other);
 };
 
 int get_thdid_from_txnid(uint64_t txnid);

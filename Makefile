@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS= -m64 -march=native -Wall -Wno-unused-variable -g -std=c++0x
+CFLAGS= -m64 -march=native -Wall -Wno-unused-but-set-variable -Wno-unused-variable -g -std=c++0x
 
 .SUFFIXES: .o .cpp .h
 

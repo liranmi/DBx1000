@@ -31,7 +31,12 @@ IndexHash::get_latch(BucketHeader * bucket) {
 	while (!ATOM_CAS(bucket->locked, false, true)) {}
 }
 
-void 
+bool
+IndexHash::try_latch(BucketHeader * bucket) {
+	return ATOM_CAS(bucket->locked, false, true);
+}
+
+void
 IndexHash::release_latch(BucketHeader * bucket) {
 	bool ok = ATOM_CAS(bucket->locked, true, false);
 	assert(ok);
@@ -54,6 +59,44 @@ RC IndexHash::index_insert(idx_key_t key, itemid_t * item, int part_id) {
 	return rc;
 }
 
+bool IndexHash::index_try_lock(uint64_t bkt_idx, int part_id) {
+	RC rc = RCOK;
+	assert(bkt_idx < _bucket_cnt_per_part);
+	BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
+	// 1. try latch
+	return try_latch(cur_bkt);
+}
+
+RC IndexHash::index_lock(uint64_t bkt_idx, int part_id) {
+	RC rc = RCOK;
+	assert(bkt_idx < _bucket_cnt_per_part);
+	BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
+	// 1. try latch
+	get_latch(cur_bkt);
+	return rc;
+}
+
+RC IndexHash::index_unlock(uint64_t bkt_idx, int part_id) {
+	RC rc = RCOK;
+	assert(bkt_idx < _bucket_cnt_per_part);
+	BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
+	// 1. try latch
+	release_latch(cur_bkt);
+	return rc;
+}
+
+uint64_t  IndexHash::get_bucket_index_(idx_key_t key) {
+	return hash(key);
+}
+RC IndexHash::index_insert_no_lock(idx_key_t key, itemid_t * item, int part_id) {
+	RC rc = RCOK;
+	uint64_t bkt_idx = hash(key);
+	assert(bkt_idx < _bucket_cnt_per_part);
+	BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
+
+	cur_bkt->insert_item(key, item, part_id);
+	return rc;
+}
 RC IndexHash::index_read(idx_key_t key, itemid_t * &item, int part_id) {
 	uint64_t bkt_idx = hash(key);
 	assert(bkt_idx < _bucket_cnt_per_part);

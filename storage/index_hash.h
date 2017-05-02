@@ -46,9 +46,15 @@ public:
 	RC	 		index_read(idx_key_t key, itemid_t * &item, int part_id=-1);	
 	RC	 		index_read(idx_key_t key, itemid_t * &item,
 							int part_id=-1, int thd_id=0);
+	bool		index_try_lock(uint64_t bkt_idx, int part_id);
+	RC 			index_lock(uint64_t bkt_idx, int part_id);
+	RC 			index_unlock(uint64_t bkt_idx, int part_id);
+	RC		    index_insert_no_lock(idx_key_t key, itemid_t * item, int part_id);
+	uint64_t  	get_bucket_index_(idx_key_t key);
 private:
 	void get_latch(BucketHeader * bucket);
 	void release_latch(BucketHeader * bucket);
+	bool try_latch(BucketHeader * bucket);
 	
 	// TODO implement more complex hash function
 	uint64_t hash(idx_key_t key) {	return key % _bucket_cnt_per_part; }

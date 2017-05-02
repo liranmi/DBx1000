@@ -20,8 +20,11 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 	wr_cnt = 0;
 	insert_cnt = 0;
 	accesses = (Access **) _mm_malloc(sizeof(Access *) * MAX_ROW_PER_TXN, 64);
-	for (int i = 0; i < MAX_ROW_PER_TXN; i++)
+	insert_rows_array = (row_item_t **) _mm_malloc(sizeof(row_item_t *) * MAX_ROW_PER_TXN, 64);
+	for (int i = 0; i < MAX_ROW_PER_TXN; i++){
 		accesses[i] = NULL;
+		insert_rows_array[i] = NULL;
+	}
 	num_accesses_alloc = 0;
 #if CC_ALG == TICTOC || CC_ALG == SILO
 	_pre_abort = (g_params["pre_abort"] == "true");
@@ -102,18 +105,22 @@ void txn_man::cleanup(RC rc) {
 
 	if (rc == Abort) {
 		for (UInt32 i = 0; i < insert_cnt; i ++) {
-			row_t * row = insert_rows[i];
-			assert(g_part_alloc == false);
+			row_t * row = (row_t*)insert_rows_array[i]->item->location; //LIRAN DEBUG FIX
+			//assert(g_part_alloc == false);
 #if CC_ALG != HSTORE && CC_ALG != OCC
 			mem_allocator.free(row->manager, 0);
 #endif
 			row->free_row();
 			mem_allocator.free(row, sizeof(row));
+			mem_allocator.free(insert_rows_array[i]->item,sizeof(itemid_t));
 		}
 	}
 	row_cnt = 0;
 	wr_cnt = 0;
 	insert_cnt = 0;
+	for (int i = 0; i<O_size ; i++){
+		insert_lock_array[i].clear();
+	}
 #if CC_ALG == DL_DETECT
 	dl_detector.clear_dep(get_txn_id());
 #endif
@@ -177,11 +184,34 @@ row_t * txn_man::get_row(row_t * row, access_t type) {
 	return accesses[row_cnt - 1]->data;
 }
 
-void txn_man::insert_row(row_t * row, table_t * table) {
-	if (CC_ALG == HSTORE)
+void txn_man::insert_row(INDEX * index, idx_key_t key,row_t * row, int part_id,Order_type o_type) {
+	if (CC_ALG != SILO)
 		return;
+
+	itemid_t * m_item = (itemid_t *) _mm_malloc(sizeof(itemid_t), 64);
+	m_item->init();
+	m_item->type = DT_row;
+	m_item->location = row;
+	m_item->valid = true;
+	if (insert_rows_array[insert_cnt] == NULL) {
+		row_item_t * row_obj = (row_item_t *) _mm_malloc(sizeof(row_item_t), 64);
+		insert_rows_array[insert_cnt] = row_obj;
+		row_obj->index = index;
+		row_obj->key = key;
+		row_obj->item = m_item;
+		row_obj->part_id = part_id;
+		row_obj->o_type = o_type;
+		index_order_arr[o_type] = index;
+	}
+	else{
+		insert_rows_array[insert_cnt]->index = index;
+		insert_rows_array[insert_cnt]->key = key;
+		insert_rows_array[insert_cnt]->item = m_item;
+		insert_rows_array[insert_cnt]->part_id = part_id;
+		insert_rows_array[insert_cnt]->o_type = o_type;
+	}
+	insert_cnt++;
 	assert(insert_cnt < MAX_ROW_PER_TXN);
-	insert_rows[insert_cnt ++] = row;
 }
 
 itemid_t *
@@ -199,7 +229,31 @@ txn_man::index_read(INDEX * index, idx_key_t key, int part_id, itemid_t *& item)
 	index->index_read(key, item, part_id, get_thd_id());
 	INC_TMP_STATS(get_thd_id(), time_index, get_sys_clock() - starttime);
 }
+void
+txn_man::index_lock(row_item_t * obj){
+	uint64_t bkt_idx  = obj->index->get_bucket_index_(obj->key);
+	//Try lock if succedded save bkt_idx in the set
+	if (true == obj->index->index_try_lock(bkt_idx,obj->part_id)){
+		insert_lock_array[obj->o_type].insert(bkt_idx);
+	}
+	else{
+			if (true == insert_lock_array[obj->o_type].insert(bkt_idx).second){
+				obj->index->index_lock(bkt_idx,obj->part_id);
+				//wait and lock
+			}
+		//if its in the list its already locked in this session
+	}
 
+}
+void
+txn_man::index_unlock(INDEX * index,uint64_t bkt_idx){
+	index->index_unlock(bkt_idx,0);
+}
+void
+txn_man::index_insert(row_item_t * obj){
+	obj->index->index_insert(obj->key,obj->item,obj->part_id);
+	//obj->index->index_insert_no_lock(obj->key,obj->item,obj->part_id);
+}
 RC txn_man::finish(RC rc) {
 #if CC_ALG == HSTORE
 	return RCOK;

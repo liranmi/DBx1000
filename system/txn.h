@@ -10,9 +10,10 @@ class table_t;
 class base_query;
 class itemid_t;
 class INDEX;
-
+class row_item_t;
 // each thread has a txn_man. 
 // a txn_man corresponds to a single transaction.
+
 
 //For VLL
 enum TxnType {VLL_Blocked, VLL_Free};
@@ -91,13 +92,18 @@ public:
 	TxnType 		vll_txn_type;
 	itemid_t *		index_read(INDEX * index, idx_key_t key, int part_id);
 	void 			index_read(INDEX * index, idx_key_t key, int part_id, itemid_t *& item);
+	void			index_insert(row_item_t * obj);
+	void 			index_lock(row_item_t * obj);
+	void			index_unlock(INDEX * index,uint64_t bkt_idx);
 	row_t * 		get_row(row_t * row, access_t type);
 protected:	
-	void 			insert_row(row_t * row, table_t * table);
+	void 			insert_row(INDEX * index, idx_key_t key,row_t * row, int part_id,Order_type o_type);
 private:
 	// insert rows
 	uint64_t 		insert_cnt;
-	row_t * 		insert_rows[MAX_ROW_PER_TXN];
+	row_item_t ** 	insert_rows_array;
+	set<uint64_t>   insert_lock_array[O_size];
+	INDEX * 		index_order_arr[O_size];
 	txnid_t 		txn_id;
 	ts_t 			timestamp;
 

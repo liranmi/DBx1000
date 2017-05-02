@@ -354,8 +354,8 @@ void tpcc_wl::init_tab_order(uint64_t did, uint64_t wid) {
 			char ol_dist_info[24];
 	        MakeAlphaString(24, 24, ol_dist_info, wid-1);
 			row->set_value(OL_DIST_INFO, ol_dist_info);
-			index_insert(i_orderline, orderlineKey(wid,did,oid), row, wh_to_part(wid));
-			glob_diag->insert_key_order_line(orderlineKey(wid,did,oid),wid - 1);
+			index_insert(i_orderline, orderlineKey(wid,did,oid,ol), row, wh_to_part(wid));
+			glob_diag->insert_key_order_line(orderlineKey(wid,did,oid,ol),wid - 1);
 			glob_diag->order_lines_counter[wid - 1]++;
 		}
 #endif

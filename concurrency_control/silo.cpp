@@ -1,7 +1,7 @@
 #include "txn.h"
 #include "row.h"
 #include "row_silo.h"
-
+#include "tpcc.h"
 #if CC_ALG == SILO
 
 RC
@@ -155,6 +155,27 @@ final:
 				access->data, _cur_tid );
 			accesses[ write_set[i] ]->orig_row->manager->release();
 		}
+		for (uint64_t j = 0; j < insert_cnt; j++){
+			row_t * row = (row_t *)insert_rows_array[j]->item->location;
+			row->manager->lock();
+		}
+
+		for (uint64_t j = 0; j < insert_cnt; j++){
+			this->index_insert(insert_rows_array[j]);
+			/*
+			if (insert_rows_array[j]->o_type == O_order_lines){
+				glob_diag->insert_key_order_line(orderlineKey(wid,did,oid,ol),wid - 1);
+				glob_diag->order_lines_counter[wid - 1]++;
+			}
+			*/
+
+		}
+
+		for (uint64_t j = 0; j < insert_cnt; j++){
+			row_t * row = (row_t *)insert_rows_array[j]->item->location;
+			row->manager->release();
+		}
+
 		cleanup(rc);
 	}
 	return rc;
