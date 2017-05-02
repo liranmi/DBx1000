@@ -162,13 +162,6 @@ final:
 
 		for (uint64_t j = 0; j < insert_cnt; j++){
 			this->index_insert(insert_rows_array[j]);
-			/*
-			if (insert_rows_array[j]->o_type == O_order_lines){
-				glob_diag->insert_key_order_line(orderlineKey(wid,did,oid,ol),wid - 1);
-				glob_diag->order_lines_counter[wid - 1]++;
-			}
-			*/
-
 		}
 
 		for (uint64_t j = 0; j < insert_cnt; j++){

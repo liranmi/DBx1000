@@ -1,6 +1,6 @@
 #include "tpcc_helper.h"
 
-#define PRIME_DIST 145477
+#define PRIME_DIST 479001599
 #define MAX_O_NUM 10000000
 drand48_data ** tpcc_buffer;
 

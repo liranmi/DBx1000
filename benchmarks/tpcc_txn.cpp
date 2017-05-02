@@ -428,7 +428,7 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 		r_ol->set_value(OL_O_ID, &o_id);
 		r_ol->set_value(OL_D_ID, &d_id);
 		r_ol->set_value(OL_W_ID, &w_id);
-		r_ol->set_value(OL_NUMBER, &ol_number);
+		r_ol->set_value(OL_NUMBER, &(ol_number));
 		r_ol->set_value(OL_I_ID, &ol_i_id);
 #if !TPCC_SMALL
 		int w_tax=1, d_tax=1;
@@ -436,9 +436,10 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
 		r_ol->set_value(OL_SUPPLY_W_ID, &ol_supply_w_id);
 		r_ol->set_value(OL_QUANTITY, &ol_quantity);
 		r_ol->set_value(OL_AMOUNT, &ol_amount);
-#endif		
-		insert_row(_wl->i_orderline, orderlineKey(w_id,d_id,o_id,ol_number),r_ol, wh_to_part(w_id),O_order_lines);
+#endif
+		insert_row(_wl->i_orderline, orderlineKey(w_id,d_id,o_id,ol_number + 1),r_ol, wh_to_part(w_id),O_order_lines);
 	}
+	query->rec_oid = o_id;
 	assert( rc == RCOK );
 	return finish(rc);
 }

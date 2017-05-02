@@ -12,6 +12,7 @@
 #include "tpcc_query.h"
 #include "mem_alloc.h"
 #include "test.h"
+#include "diag.h"
 
 void thread_t::init(uint64_t thd_id, workload * workload) {
 	_thd_id = thd_id;
@@ -176,7 +177,8 @@ RC thread_t::run() {
 			stats.abort(get_thd_id());
 			m_txn->abort_cnt ++;
 		}
-
+		if (rc == RCOK)
+			glob_diag->record_mgr(m_query,get_thd_id());
 		if (rc == FINISH)
 			return rc;
 		if (!warmup_finish && txn_cnt >= WARMUP / g_thread_cnt) 

@@ -171,6 +171,10 @@ void BucketHeader::read_item(idx_key_t key, itemid_t * &item, const char * tname
 			break;
 		cur_node = cur_node->next;
 	}
+	if (cur_node == NULL){
+		cout << "INVALID KEY! = " << key << endl;
+		exit(1);
+	}
 	M_ASSERT(cur_node->key == key, "Key does not exist!");
 	item = cur_node->items;
 }

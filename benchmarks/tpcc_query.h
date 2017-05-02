@@ -45,6 +45,7 @@ public:
 	uint64_t o_carrier_id;
 	uint64_t ol_delivery_d;
 	// for order-status
+	uint64_t rec_oid;
 
 
 private:
